@@ -367,6 +367,7 @@
 
       // Touch
       let touchOffset = 0;
+      let swipeStartY = null;
       canvas.addEventListener('touchstart', e => {
         e.preventDefault();
         if (e.touches.length === 2) pauseBtn.onclick();
@@ -374,6 +375,7 @@
           const rect = canvas.getBoundingClientRect();
           let x = e.touches[0].clientX - rect.left;
           touchOffset = x - catcher.x;
+          swipeStartY = e.touches[0].clientY;
         }
       });
       canvas.addEventListener('touchmove', e => {
@@ -381,6 +383,23 @@
         const rect = canvas.getBoundingClientRect();
         let x = e.touches[0].clientX - rect.left;
         catcher.x = Math.max(0, Math.min(canvas.width - catcher.w, x - touchOffset));
+        if (swipeStartY !== null) {
+          let currentY = e.touches[0].clientY;
+          let deltaY = currentY - swipeStartY;
+          if (Math.abs(deltaY) > 30) { // threshold to avoid accidental triggers
+            if (deltaY < 0) {
+              // Swipe up: increase fall speed
+              state.fallSpeed = Math.min(5, state.fallSpeed + 0.1);
+            } else {
+              // Swipe down: decrease fall speed
+              state.fallSpeed = Math.max(0.1, state.fallSpeed - 0.1);
+            }
+            swipeStartY = currentY; // reset for continuous adjustment
+          }
+        }
+      });
+      canvas.addEventListener('touchend', e => {
+        swipeStartY = null;
       });
 
       speedRange.oninput = () => { catcher.speed = parseInt(speedRange.value); };
