@@ -240,7 +240,7 @@
   </style>
 </head>
 <body>
-  <div id="startScreen">
+  <div id="homeScreen">
     <div class="start-content">
       <h1 class="main-title">🎨 Dingus McGee</h1>
       <button id="mainActionBtn" class="start-btn">Start Game</button>
@@ -250,16 +250,7 @@
       <div id="mainSettingsPanel" class="settings-panel hidden">
         <h2 style="margin-top:0;font-size:1.1rem;color:#333;">Settings</h2>
         <label>
-          Catcher Speed
-          <input type="range" id="mainCatcherSpeed" min="5" max="100" value="25" />
-          <button id="resetCatcherSpeedBtn" type="button" style="margin-left:8px;">Reset</button>
-        </label>
-        <label>
-          Fall Speed
-          <input type="range" id="mainFallSpeed" min="1" max="50" value="10" />
-          <button id="resetFallSpeedBtn" type="button" style="margin-left:8px;">Reset</button>
-        </label>
-        <label>Miss Penalty
+          Hard mode (penalty for missing the target color)
           <input type="checkbox" id="mainMissPenalty" />
         </label>
         <label>Music
@@ -273,7 +264,14 @@
   </div>
   <div id="feedback" class="hidden"></div>
   <div id="overlay" class="hidden"></div>
-  <div id="gameOverScreen" class="hidden"><div><h2>Game Over</h2><p id="finalScore"></p><button id="restartBtn">Restart</button></div></div>
+  <div id="gameOverScreen" class="hidden">
+    <div class="start-content" style="text-align:center;">
+      <h1 class="main-title" style="margin-bottom:10px;">Game Over</h1>
+      <div style="font-size:1.3rem; margin-bottom:12px;">Final Score: <span id="finalScore"></span></div>
+      <div style="font-size:1.1rem; margin-bottom:18px;">High Score: <span id="finalHighScore"></span></div>
+      <button id="restartBtn" class="start-btn" style="margin-bottom:0;">Restart</button>
+    </div>
+  </div>
   <div id="hud" class="hidden">
     <div>⭐<span id="score">0</span></div>
     <div>XP:<span id="xp">0</span></div>
@@ -316,22 +314,19 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // --- DOM refs ---
-      const startScreen = document.getElementById('startScreen');
+      const homeScreen = document.getElementById('homeScreen');
       const mainActionBtn = document.getElementById('mainActionBtn');
       const mainSettingsBtn = document.getElementById('mainSettingsBtn');
       const mainSettingsPanel = document.getElementById('mainSettingsPanel');
-      const mainCatcherSpeed = document.getElementById('mainCatcherSpeed');
-      const mainFallSpeed = document.getElementById('mainFallSpeed');
       const mainMissPenalty = document.getElementById('mainMissPenalty');
       const mainMusicToggle = document.getElementById('mainMusicToggle');
       const mainSfxToggle = document.getElementById('mainSfxToggle');
       const mainControlsInstructions = document.getElementById('mainControlsInstructions');
       const pauseHint = document.getElementById('pauseHint');
-      const resetCatcherSpeedBtn = document.getElementById('resetCatcherSpeedBtn');
-      const resetFallSpeedBtn = document.getElementById('resetFallSpeedBtn');
       const hud = document.getElementById('hud');
       const gameOver = document.getElementById('gameOverScreen');
       const finalScoreEl = document.getElementById('finalScore');
+      const finalHighScoreEl = document.getElementById('finalHighScore');
       const restartBtn = document.getElementById('restartBtn');
       const scoreEl = document.getElementById('score');
       const xpEl = document.getElementById('xp');
@@ -344,8 +339,7 @@
       const feedback = document.getElementById('feedback');
 
       // --- State ---
-      const DEFAULT_CATCHER_SPEED = 25;
-      const DEFAULT_FALL_SPEED = 1.0;
+      let savedHighScore = parseInt(localStorage.getItem('highScore')) || 0;
       let state = {
         score: 0,
         lives: 3,
@@ -353,12 +347,12 @@
         xp: 0,
         level: 1,
         streak: 0,
-        fallSpeed: DEFAULT_FALL_SPEED,
+        fallSpeed: 1.0,
         baseSpawn: 600,
         lastSpawn: 0,
         paused: false,
         started: false,
-        highScore: 0,
+        highScore: savedHighScore,
         missPenalty: false
       };
       let gameLoopId, lastTime = 0;
@@ -373,8 +367,6 @@
         <h2>How to Play</h2>
         <ul>
           <li><b>Move:</b> <span class="kbd">←</span> <span class="kbd">→</span></li>
-          <li><b>Change Catcher Speed:</b> <span class="kbd">A</span> / <span class="kbd">D</span></li>
-          <li><b>Change Fall Speed:</b> <span class="kbd">W</span> / <span class="kbd">S</span></li>
           <li><b>Pause:</b> <span class="kbd">Space</span></li>
         </ul>
         <div class="tip">Catch the <span style="font-weight:bold;">target color</span> to score. Good luck!</div>
@@ -383,23 +375,22 @@
         <h2>How to Play</h2>
         <ul>
           <li><b>Move:</b> Drag left/right</li>
-          <li><b>Change Fall Speed:</b> Swipe up/down</li>
           <li><b>Pause:</b> Two-finger tap</li>
         </ul>
         <div class="tip">Catch the <span style="font-weight:bold;">target color</span> to score. Good luck!</div>
       `;
 
-      function updateStartScreenContent() {
+      function updateHomeScreenContent() {
         mainControlsInstructions.innerHTML = isMobile() ? mobileControls : desktopControls;
         pauseHint.textContent = isMobile() ? 'Two-finger tap to pause' : 'Space bar to pause';
         mainActionBtn.textContent = state.paused ? 'Resume Game' : 'Start Game';
       }
 
-      // --- Show/hide start screen ---
-      function showStartScreen(show, isPause = false) {
+      // --- Show/hide home screen ---
+      function showHomeScreen(show, isPause = false) {
         state.paused = isPause;
-        startScreen.classList.toggle('hidden', !show);
-        updateStartScreenContent();
+        homeScreen.classList.toggle('hidden', !show);
+        updateHomeScreenContent();
         mainSettingsPanel.classList.add('hidden');
       }
 
@@ -428,7 +419,7 @@
         r: 10,
         x: (canvas.width - canvas.width * 0.08) / 2,
         y: canvas.height - 40,
-        speed: parseInt(mainCatcherSpeed.value),
+        speed: 18,
         velX: 0
       };
       const circles = [];
@@ -481,7 +472,15 @@
           ctx.fill();
         });
       }
+
+      // --- Power-Ups & Obstacles ---
+      // Add new types: 'slow', 'double', 'bomb'
       function spawnCircle() {
+        let roll = Math.random();
+        let type = 'normal';
+        if (roll < 0.06) type = 'slow';         // 6% chance
+        else if (roll < 0.12) type = 'double';  // 6% chance
+        else if (roll < 0.18) type = 'bomb';    // 6% chance
         let baseSpd = 2 + state.score*0.05;
         circles.push({
           x: Math.random()*(canvas.width-30)+15,
@@ -489,9 +488,26 @@
           r: 15 + Math.random()*10,
           baseSpd,
           spd: baseSpd * state.fallSpeed,
-          color: colors[Math.floor(Math.random()*colors.length)]
+          color: type === 'slow' ? '#8e44ad' : type === 'double' ? '#e67e22' : type === 'bomb' ? '#222' : colors[Math.floor(Math.random()*colors.length)],
+          type
         });
       }
+
+      // --- Combo & Streak System ---
+      let comboTimer = null;
+      let comboCount = 0;
+      function resetCombo() {
+        comboCount = 0;
+        if (comboTimer) clearTimeout(comboTimer);
+        comboTimer = null;
+      }
+      function addCombo() {
+        comboCount++;
+        if (comboTimer) clearTimeout(comboTimer);
+        comboTimer = setTimeout(resetCombo, 2000); // 2s to keep combo
+        if (comboCount > 1) showFeedback(`Combo x${comboCount}!`);
+      }
+
       function drawBackground() {
         let t = Math.min(1, state.score/1000);
         let c1 = `hsl(${200-100*t},80%,70%)`;
@@ -529,6 +545,8 @@
         xpEl.textContent = state.xp;
         levelEl.textContent = state.level;
       }
+
+      // --- Update function with power-up logic ---
       function update(dt) {
         if (Date.now() - state.lastSpawn > state.baseSpawn / state.fallSpeed) {
           spawnCircle();
@@ -544,22 +562,39 @@
           if (caught || missed) {
             if (caught) {
               createParticles(c.x,c.y,c.color);
-              if (c.color === targetColor) {
-                state.score++;
-                state.streak++;
-                updateXP(10);
-                targetColor = colors[Math.floor(Math.random()*colors.length)];
-                if (state.score > state.highScore) {
-                  state.highScore = state.score;
-                  localStorage.setItem('highScore',state.highScore);
-                  highScoreEl.textContent = state.highScore;
-                }
+              // --- Power-up logic ---
+              if (c.type === 'slow') {
+                state.fallSpeed = Math.max(0.5, state.fallSpeed * 0.5);
+                showFeedback('Slow Motion!');
+                setTimeout(() => { state.fallSpeed = Math.min(5, state.fallSpeed * 2); }, 3000);
+              } else if (c.type === 'double') {
+                state.score += 1; // +1 extra point
+                showFeedback('Double Points!');
+                addCombo();
+              } else if (c.type === 'bomb') {
+                state.lives = Math.max(0, state.lives - 2);
+                showFeedback('Bomb! -2 Lives');
+                resetCombo();
               } else {
-                state.lives--;
-                state.streak = 0;
-              }
-              if (state.streak>0 && state.streak%10===0) {
-                state.lives = Math.min(state.maxLives,state.lives+1);
+                if (c.color === targetColor) {
+                  state.score++;
+                  state.streak++;
+                  addCombo();
+                  updateXP(10 + (state.streak > 1 ? 10 * (state.streak - 1) : 0));
+                  targetColor = colors[Math.floor(Math.random()*colors.length)];
+                  if (state.score > state.highScore) {
+                    state.highScore = state.score;
+                    localStorage.setItem('highScore',state.highScore);
+                    highScoreEl.textContent = state.highScore;
+                  }
+                } else {
+                  state.lives--;
+                  state.streak = 0;
+                  resetCombo();
+                }
+                if (state.streak>0 && state.streak%10===0) {
+                  state.lives = Math.min(state.maxLives,state.lives+1);
+                }
               }
             }
             scoreEl.textContent = state.score;
@@ -570,6 +605,7 @@
         }
         updateParticles();
       }
+
       function gameLoop(ts) {
         if (state.paused) return;
         let dt = ts - lastTime;
@@ -582,7 +618,9 @@
         if (state.lives <= 0) {
           cancelAnimationFrame(gameLoopId);
           finalScoreEl.textContent = state.score;
+          finalHighScoreEl.textContent = state.highScore;
           gameOver.classList.remove('hidden');
+          hud.classList.add('hidden');
           return;
         }
         gameLoopId = requestAnimationFrame(gameLoop);
@@ -594,17 +632,15 @@
         state.level = 1;
         state.streak = 0;
         state.lastSpawn = 0;
-        catcher.speed = DEFAULT_CATCHER_SPEED;
-        state.fallSpeed = DEFAULT_FALL_SPEED;
-        mainCatcherSpeed.value = DEFAULT_CATCHER_SPEED;
-        mainFallSpeed.value = DEFAULT_FALL_SPEED * 10;
+        state.fallSpeed = 1.0;
         scoreEl.textContent = '0';
         xpEl.textContent = '0';
         levelEl.textContent = '1';
         livesEl.textContent = '3';
+        highScoreEl.textContent = state.highScore;
         targetColor = colors[Math.floor(Math.random()*colors.length)];
         targetColorBox.style.backgroundColor = targetColor;
-        startScreen.classList.add('hidden');
+        homeScreen.classList.add('hidden');
         hud.classList.remove('hidden');
         gameOver.classList.add('hidden');
         lastTime = performance.now();
@@ -614,7 +650,7 @@
       }
       function resumeGame() {
         state.paused = false;
-        showStartScreen(false);
+        showHomeScreen(false);
         hud.classList.remove('hidden');
         lastTime = performance.now();
         gameLoopId = requestAnimationFrame(gameLoop);
@@ -626,30 +662,15 @@
       mainSettingsBtn.onclick = () => {
         mainSettingsPanel.classList.toggle('hidden');
       };
-      mainCatcherSpeed.oninput = () => {
-        catcher.speed = parseInt(mainCatcherSpeed.value);
-        showFeedback(`Catcher Speed: ${catcher.speed}`);
-      };
-      mainFallSpeed.oninput = () => {
-        state.fallSpeed = parseFloat(mainFallSpeed.value) / 10;
-        showFeedback(`Fall Speed: ${state.fallSpeed.toFixed(1)}`);
-      };
-      resetCatcherSpeedBtn.onclick = () => {
-        mainCatcherSpeed.value = DEFAULT_CATCHER_SPEED;
-        catcher.speed = DEFAULT_CATCHER_SPEED;
-        showFeedback(`Catcher Speed: ${catcher.speed}`);
-      };
-      resetFallSpeedBtn.onclick = () => {
-        mainFallSpeed.value = DEFAULT_FALL_SPEED * 10;
-        state.fallSpeed = DEFAULT_FALL_SPEED;
-        showFeedback(`Fall Speed: ${state.fallSpeed.toFixed(1)}`);
+      mainMissPenalty.oninput = () => {
+        state.missPenalty = mainMissPenalty.checked;
       };
       // Keyboard controls
       document.addEventListener('keydown', e => {
         if (e.key === ' ') {
           if (!state.paused && state.started) {
             state.paused = true;
-            showStartScreen(true, true);
+            showHomeScreen(true, true);
             hud.classList.add('hidden');
           } else if (state.paused) {
             resumeGame();
@@ -657,26 +678,6 @@
         }
         if (e.key === 'ArrowLeft') { keys.left = true; updateVel(); }
         if (e.key === 'ArrowRight') { keys.right = true; updateVel(); }
-        if (e.key === 'w') {
-          state.fallSpeed = Math.min(5, state.fallSpeed + 0.1);
-          mainFallSpeed.value = Math.round(state.fallSpeed * 10);
-          showFeedback(`Fall Speed: ${state.fallSpeed.toFixed(1)}`);
-        }
-        if (e.key === 's') {
-          state.fallSpeed = Math.max(0.1, state.fallSpeed - 0.1);
-          mainFallSpeed.value = Math.round(state.fallSpeed * 10);
-          showFeedback(`Fall Speed: ${state.fallSpeed.toFixed(1)}`);
-        }
-        if (e.key === 'a') {
-          catcher.speed = Math.min(100, catcher.speed + 5);
-          mainCatcherSpeed.value = catcher.speed;
-          showFeedback(`Catcher Speed: ${catcher.speed}`);
-        }
-        if (e.key === 'd') {
-          catcher.speed = Math.max(5, catcher.speed - 5);
-          mainCatcherSpeed.value = catcher.speed;
-          showFeedback(`Catcher Speed: ${catcher.speed}`);
-        }
       });
       document.addEventListener('keyup', e => {
         if (e.key === 'ArrowLeft') { keys.left = false; updateVel(); }
@@ -689,7 +690,7 @@
         if (e.touches.length === 2) {
           if (!state.paused && state.started) {
             state.paused = true;
-            showStartScreen(true, true);
+            showHomeScreen(true, true);
             hud.classList.add('hidden');
           } else if (state.paused) {
             resumeGame();
@@ -709,13 +710,6 @@
           let currentY = e.touches[0].clientY;
           let deltaY = currentY - swipeStartY;
           if (Math.abs(deltaY) > 30) {
-            if (deltaY < 0) {
-              state.fallSpeed = Math.min(5, state.fallSpeed + 0.1);
-            } else {
-              state.fallSpeed = Math.max(0.1, state.fallSpeed - 0.1);
-            }
-            mainFallSpeed.value = Math.round(state.fallSpeed * 10);
-            showFeedback(`Fall Speed: ${state.fallSpeed.toFixed(1)}`);
             swipeStartY = currentY;
           }
         }
@@ -726,10 +720,11 @@
       // Restart
       restartBtn.onclick = () => {
         state.started = false;
-        showStartScreen(true, false);
+        showHomeScreen(true, false);
       };
       // Initial state
-      showStartScreen(true, false);
+      highScoreEl.textContent = state.highScore;
+      showHomeScreen(true, false);
     });
   </script>
   <style>
