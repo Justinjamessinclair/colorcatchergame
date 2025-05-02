@@ -5,55 +5,37 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Color Catcher 2.0</title>
   <style>
-    body, html {
-      margin: 0; padding: 0; background: #fdfdfd; height: 100%; overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    }
+    body, html { margin: 0; padding: 0; background: #fdfdfd; height: 100%; overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; }
     .hidden { display: none !important; }
-    #startScreen, #gameOverScreen, #overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      display: flex; justify-content: center; align-items: center;
-      background: rgba(0,0,0,0.5); color: white; z-index: 3;
-    }
-    #hud {
-      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
-      width: 90%; max-width: 600px; height: 60px;
-      background: rgba(255,255,255,0.95); display: flex; justify-content: center; align-items: center;
-      gap: 8px; padding: 0 10px; box-sizing: border-box;
-      border-bottom: 1px solid #ccc; border-radius: 0 0 10px 10px; z-index: 4;
-    }
-    #hud div { font-size: 14px; color: #222; display: flex; align-items: center; gap: 4px; }
-    button { padding: 6px 10px; background: #333; color: white; border: none; border-radius: 10px; cursor: pointer; z-index:4; }
-    #settingsPanel {
-      position: fixed; top: 70px; right: 5%; width: 200px;
-      background: rgba(50,50,50,0.95); color: white; font-size: 13px;
-      padding: 10px; border-radius: 12px; z-index: 4; display: none;
-    }
-    #settingsPanel label { display: flex; justify-content: space-between; margin: 4px 0; }
-    #gameCanvas {
-      width: 90vw; max-width: 600px; aspect-ratio: 3/4;
-      display: block; margin: 70px auto 0; background: linear-gradient(#87CEEB,#fff);
-      border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
+    #startScreen, #gameOverScreen, #overlay { position: absolute; top:0; left:0; width:100%; height:100%;
+      display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.5); color:white; z-index:3; }
+    #hud { position:fixed; top:0; left:50%; transform:translateX(-50%);
+      width:90%; max-width:600px; height:60px; background:rgba(255,255,255,0.95);
+      display:flex; justify-content:center; align-items:center; gap:8px; padding:0 10px;
+      box-sizing:border-box; border-bottom:1px solid #ccc; border-radius:0 0 10px 10px; z-index:4; }
+    #hud div { font-size:14px; color:#222; display:flex; align-items:center; gap:4px; }
+    button { padding:6px 10px; background:#333; color:white; border:none; border-radius:10px; cursor:pointer; z-index:4; }
+    #settingsPanel { position:fixed; top:70px; right:5%; width:200px; background:rgba(50,50,50,0.95);
+      color:white; font-size:13px; padding:10px; border-radius:12px; z-index:4; display:none; }
+    #settingsPanel label { display:flex; justify-content:space-between; margin:4px 0; }
+    #gameCanvas { width:90vw; max-width:600px; aspect-ratio:3/4;
+      display:block; margin:70px auto 0; background:linear-gradient(#87CEEB,#fff);
+      border-radius:12px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
   </style>
 </head>
 <body>
   <div id="startScreen">
-    <div>
-      <h1>🎨 Color Catcher 2.0</h1>
-      <button id="startBtn">Start Game</button>
-    </div>
+    <div><h1>🎨 Color Catcher 2.0</h1><button id="startBtn">Start Game</button></div>
   </div>
   <div id="overlay" class="hidden"></div>
   <div id="gameOverScreen" class="hidden">
-    <div>
-      <h2>Game Over</h2>
-      <p id="finalScore"></p>
-      <button id="restartBtn">Restart</button>
-    </div>
+    <div><h2>Game Over</h2><p id="finalScore"></p><button id="restartBtn">Restart</button></div>
   </div>
   <div id="hud" class="hidden">
     <div>⭐<span id="score">0</span></div>
+    <div>XP:<span id="xp">0</span></div>
+    <div>Level:<span id="level">1</span></div>
     <div>❤️<span id="lives">3</span></div>
     <div>🎯<span id="targetColorBox" style="display:inline-block;width:20px;height:20px;border-radius:50%;border:1px solid #222;"></span></div>
     <div>🏆<span id="highScore">0</span></div>
@@ -69,53 +51,90 @@
   <canvas id="gameCanvas" width="600" height="800"></canvas>
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const startScreen = document.getElementById('startScreen');
-    const startBtn = document.getElementById('startBtn');
-    const hud = document.getElementById('hud');
-    const overlay = document.getElementById('overlay');
-    const gameOverScreen = document.getElementById('gameOverScreen');
-    const finalScoreEl = document.getElementById('finalScore');
-    const restartBtn = document.getElementById('restartBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const settingsBtn = document.getElementById('settingsBtn');
-    const settingsPanel = document.getElementById('settingsPanel');
-    const speedRange = document.getElementById('speedRange');
-    const missPenaltyCheckbox = document.getElementById('missPenalty');
-    const musicToggle = document.getElementById('musicToggle');
-    const sfxToggle = document.getElementById('sfxToggle');
-    const scoreEl = document.getElementById('score');
-    const livesEl = document.getElementById('lives');
-    const highScoreEl = document.getElementById('highScore');
-    const targetColorBox = document.getElementById('targetColorBox');
+    // Element refs
+    const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+    const startScreen = document.getElementById('startScreen'), startBtn = document.getElementById('startBtn');
+    const overlay = document.getElementById('overlay'), gameOver = document.getElementById('gameOverScreen');
+    const finalScoreEl = document.getElementById('finalScore'), restartBtn = document.getElementById('restartBtn');
+    const hud = document.getElementById('hud'), scoreEl = document.getElementById('score'), xpEl = document.getElementById('xp'), levelEl = document.getElementById('level');
+    const livesEl = document.getElementById('lives'), highScoreEl = document.getElementById('highScore'), targetColorBox = document.getElementById('targetColorBox');
+    const pauseBtn = document.getElementById('pauseBtn'), settingsBtn = document.getElementById('settingsBtn'), settingsPanel = document.getElementById('settingsPanel');
+    const speedRange = document.getElementById('speedRange'), missPenalty = document.getElementById('missPenalty');
+    const musicToggle = document.getElementById('musicToggle'), sfxToggle = document.getElementById('sfxToggle');
+
+    // State
+    let settingsOpen = false;
+    let state = { score:0, lives:3, maxLives:3, xp:0, level:1, streak:0, fallSpeed:1, baseSpawn:800, lastSpawn:0, paused:false, highScore:0 };
     let gameLoopId, lastTime = 0;
-    let score = 0, lives = 3, highScore = parseInt(localStorage.getItem('highScore'))||0;
-    let baseSpawnInterval = 800, spawnInterval = baseSpawnInterval, lastSpawn=0, lastColorChange=0;
-    let paused=false, settingsOpen=false, fallSpeedFactor=1;
-    const colors=['#e74c3c','#2ecc71','#3498db','#f1c40f'];
-    let targetColor=colors[0];
-    const catcher={width:canvas.width*0.16,height:20,radius:10,x:(canvas.width-canvas.width*0.16)/2,y:canvas.height-40,color:'#222',speed:parseInt(speedRange.value),velX:0};
-    const circles=[];
-    const keys={left:false,right:false};
-    const bgm=new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_c916f377d2.mp3');bgm.loop=true;bgm.volume=musicToggle.checked?0.3:0;
-    const sfxCatch=new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_d4f254d5f1.mp3');
-    const sfxMiss=new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_a3793421a3.mp3');
-    musicToggle.onchange=()=>bgm.volume=musicToggle.checked?0.3:0;
-    const playSfx=s=>{if(sfxToggle.checked){s.currentTime=0;s.play();}};
-       // Draw target color above catcher
-       ctx.fillStyle = targetColor;
-        ctx.beginPath();
-        ctx.arc(catcher.x + catcher.width / 2, catcher.y + catcher.height + 20, 12, 0, 2 * Math.PI);
-        ctx.fill();
-    const clouds=Array.from({length:5},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height*0.25,sz:50+Math.random()*50,spd:0.2+Math.random()*0.3}));
-    function drawRoundedRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.fill();}
-    function spawnCircle(){const baseSpd=2+score*0.05;circles.push({x:Math.random()*(canvas.width-30)+15,y:-20,r:15+Math.random()*10,baseSpd,spd:baseSpd*fallSpeedFactor,color:colors[Math.floor(Math.random()*colors.length)]});}
-    function drawBackground(){ctx.clearRect(0,0,canvas.width,canvas.height);clouds.forEach(cl=>{cl.x+=cl.spd;if(cl.x>canvas.width+cl.sz)cl.x=-cl.sz;ctx.fillStyle='rgba(255,255,255,0.5)';ctx.beginPath();ctx.ellipse(cl.x,cl.y,cl.sz,cl.sz*0.6,0,0,2*Math.PI);ctx.fill();});}
-    function drawCatcher(){ctx.fillStyle=catcher.color;drawRoundedRect(catcher.x,catcher.y,catcher.width,catcher.height,catcher.radius);}    function drawCircles(){circles.forEach(c=>{ctx.fillStyle=c.color;ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,2*Math.PI);ctx.fill();});}
-    function update(dt){spawnInterval=baseSpawnInterval/fallSpeedFactor;if(Date.now()-lastSpawn>spawnInterval){spawnCircle();lastSpawn=Date.now();}if(Date.now()-lastColorChange>4000){targetColor=colors[Math.floor(Math.random()*colors.length)];targetColorBox.style.backgroundColor=targetColor;lastColorChange=Date.now();}catcher.velX=(keys.right?1:0)-(keys.left?1:0);catcher.x+=catcher.velX*catcher.speed*(dt/16);catcher.x=Math.max(0,Math.min(canvas.width-catcher.width,catcher.x));for(let i=circles.length-1;i>=0;i--){const c=circles[i];c.spd=c.baseSpd*fallSpeedFactor;c.y+=c.spd;const caught=c.y+c.r>=catcher.y&&c.x+c.r>=catcher.x&&c.x-c.r<=catcher.x+catcher.width;const missed=c.y-c.r>canvas.height; if(caught||missed){if(caught){if(c.color===targetColor){score++;playSfx(sfxCatch);scoreEl.textContent=score;}else{lives--;playSfx(sfxMiss);livesEl.textContent=lives;}}else if(c.color===targetColor&&missPenaltyCheckbox.checked){lives--;playSfx(sfxMiss);livesEl.textContent=lives;}circles.splice(i,1);if(score>highScore){highScore=score;localStorage.setItem('highScore',highScore);highScoreEl.textContent=highScore;}}}}
-    function gameLoop(time){if(paused)return;const dt=time-lastTime;lastTime=time;drawBackground();drawCatcher();drawCircles();update(dt);if(lives<=0){cancelAnimationFrame(gameLoopId);finalScoreEl.textContent=score;gameOverScreen.classList.remove('hidden');bgm.pause();return;}gameLoopId=requestAnimationFrame(gameLoop);}
-    function startGame(){startScreen.classList.add('hidden');hud.classList.remove('hidden');overlay.classList.add('hidden');gameOverScreen.classList.add('hidden');score=0;lives=3;baseSpawnInterval=800;circles.length=0;lastSpawn=0;paused=false;fallSpeedFactor=1;catcher.speed=parseInt(speedRange.value);scoreEl.textContent=score;livesEl.textContent=lives;highScoreEl.textContent=highScore;bgm.play();lastTime=performance.now();targetColor=colors[Math.floor(Math.random()*colors.length)];targetColorBox.style.backgroundColor=targetColor;requestAnimationFrame(gameLoop);}startBtn.onclick=startGame;restartBtn.onclick=startGame;function togglePause(){paused=!paused;overlay.classList.toggle('hidden',!paused);overlay.textContent=paused?'⏸️ Paused':'';if(!paused){lastSpawn=Date.now();lastColorChange=Date.now();lastTime=performance.now();requestAnimationFrame(gameLoop);}}pauseBtn.onclick=togglePause;document.addEventListener('keydown',e=>{if(e.key===' ')togglePause();if(e.key==='ArrowLeft')keys.left=true;if(e.key==='ArrowRight')keys.right=true;if(e.key==='ArrowUp'){catcher.speed=Math.min(100,catcher.speed+5);speedRange.value=catcher.speed;}if(e.key==='ArrowDown'){catcher.speed=Math.max(5,catcher.speed-5);speedRange.value=catcher.speed;}if(e.key==='a'){fallSpeedFactor=Math.min(5,fallSpeedFactor+0.1);}if(e.key==='f'){fallSpeedFactor=Math.max(0.1,fallSpeedFactor-0.1);} });document.addEventListener('keyup',e=>{if(e.key==='ArrowLeft')keys.left=false;if(e.key==='ArrowRight')keys.right=false;});settingsBtn.onclick=()=>{settingsOpen=!settingsOpen;settingsPanel.style.display=settingsOpen?'block':'none';};speedRange.oninput=()=>{catcher.speed=parseInt(speedRange.value);};});
+    const colors = ['#e74c3c','#2ecc71','#3498db','#f1c40f']; let targetColor = colors[0];
+
+    // High score load
+    let storedHigh = parseInt(localStorage.getItem('highScore')) || 0;
+    state.highScore = storedHigh;
+    highScoreEl.textContent = storedHigh;
+
+    // Audio
+    const bgm = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_c916f377d2.mp3');
+    const intensity = new Audio('https://cdn.pixabay.com/download/audio/2022/03/15/audio_5b7bf586e3.mp3');
+    const sfxCatch = new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_d4f254d5f1.mp3');
+    const sfxMiss = new Audio('https://cdn.pixabay.com/download/audio/2022/03/10/audio_a3793421a3.mp3');
+    bgm.loop = intensity.loop = true;
+    bgm.volume = musicToggle.checked ? 0.3 : 0;
+    intensity.volume = 0;
+    musicToggle.onchange = () => { bgm.volume = musicToggle.checked?0.3:0; intensity.volume = musicToggle.checked?(state.level/5):0; };
+    const playSfx = s => { if(sfxToggle.checked){ s.currentTime=0; s.play(); }};
+
+    // Catcher & arrays
+    const catcher = { w:canvas.width*0.08, h:20, r:10,
+      x:(canvas.width-canvas.width*0.08)/2, y:canvas.height-40,
+      speed:parseInt(speedRange.value), velX:0 };
+    const circles = [], clouds = Array.from({length:5},()=>({ x:Math.random()*canvas.width, y:Math.random()*canvas.height*0.25, sz:50+Math.random()*50, spd:0.2+Math.random()*0.3 }));
+    const particles = [];
+
+    // Utils
+    function hexToRgb(h){ const c=h.slice(1); return `${parseInt(c.substr(0,2),16)},${parseInt(c.substr(2,2),16)},${parseInt(c.substr(4,2),16)}`; }
+    function drawRounded(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.fill(); }
+    function createParticles(x,y,color){ for(let i=0;i<20;i++){ particles.push({ x,y,dx:(Math.random()-0.5)*4, dy:(Math.random()-0.5)*4, r:3+Math.random()*3, alpha:1, color }); }}
+    function updateParticles(){ for(let i=particles.length-1;i>=0;i--){ let p=particles[i]; p.x+=p.dx; p.y+=p.dy; p.alpha-=0.02; if(p.alpha<=0) particles.splice(i,1); }}
+    function drawParticles(){ particles.forEach(p=>{ ctx.fillStyle=`rgba(${hexToRgb(p.color)},${p.alpha})`; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,2*Math.PI); ctx.fill(); }); }
+
+    // Spawn
+    function spawnCircle(){ let roll=Math.random(), type='normal'; if(roll<0.05) type='extra'; else if(roll<0.10) type='poison'; else if(roll<0.15) type='freeze';
+      let baseSpd=2+state.score*0.05;
+      circles.push({ x:Math.random()*(canvas.width-30)+15, y:-20, r:15+Math.random()*10, baseSpd, spd:baseSpd*state.fallSpeed, type, color:colors[Math.floor(Math.random()*colors.length)] }); }
+
+    // Draw
+    function drawBackground(){ let t=Math.min(1,state.score/1000); let c1=`hsl(${200-100*t},80%,70%)`, c2=`hsl(${50+50*t},90%,90%)`; let g=ctx.createLinearGradient(0,0,0,canvas.height); g.addColorStop(0,c1); g.addColorStop(1,c2); ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height); }
+    function drawCatcher(){ ctx.fillStyle='#222'; drawRounded(catcher.x,catcher.y,catcher.w,catcher.h,catcher.r); ctx.fillStyle=targetColor; ctx.beginPath(); ctx.arc(catcher.x+catcher.w/2,catcher.y+catcher.h+16,12,0,2*Math.PI); ctx.fill(); }
+    function drawCircles(){ circles.forEach(c=>{ ctx.fillStyle=c.color; ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,2*Math.PI); ctx.fill(); }); }
+
+    // XP
+    function updateXP(amount){ state.xp+=amount; let need=state.level*100; while(state.xp>=need){ state.xp-=need; state.level++; need=state.level*100; } xpEl.textContent=state.xp; levelEl.textContent=state.level; let vol=Math.min(1,state.level/5); intensity.volume=musicToggle.checked?vol:0; }
+
+    // Update
+    function update(dt){ if(Date.now()-state.lastSpawn>state.baseSpawn/state.fallSpeed){ spawnCircle(); state.lastSpawn=Date.now(); } catcher.x=Math.max(0,Math.min(canvas.width-catcher.w,catcher.x+catcher.velX*catcher.speed*(dt/16)));
+      for(let i=circles.length-1;i>=0;i--){ let c=circles[i]; c.spd=c.baseSpd*state.fallSpeed; c.y+=c.spd; let caught=c.y+c.r>=catcher.y&&c.x+c.r>=catcher.x&&c.x-c.r<=catcher.x+catcher.w; let missed=c.y-c.r>canvas.height; if(caught||missed){ if(caught){ createParticles(c.x,c.y,c.color); switch(c.type){ case 'extra': state.lives=Math.min(state.maxLives,state.lives+1); break; case 'poison': catcher.speed/=2; setTimeout(()=>catcher.speed*=2,3000); break; case 'freeze': state.lastSpawn+=3000; break; default: if(c.color===targetColor){ state.score++; state.streak++; playSfx(sfxCatch); updateXP(10); targetColor=colors[Math.floor(Math.random()*colors.length)]; if(state.score>state.highScore){ state.highScore=state.score; localStorage.setItem('highScore',state.highScore); highScoreEl.textContent=state.highScore;} } else { state.lives--; state.streak=0; playSfx(sfxMiss);} if(state.streak>0&&state.streak%10===0){ state.lives=Math.min(state.maxLives,state.lives+1);} } scoreEl.textContent=state.score; livesEl.textContent=state.lives; targetColorBox.style.backgroundColor=targetColor;} circles.splice(i,1);} } updateParticles(); }
+
+    // Loop
+    function gameLoop(ts){ if(state.paused) return; let dt=ts-lastTime; lastTime=ts; drawBackground(); drawCatcher(); drawCircles(); drawParticles(); update(dt); if(state.lives<=0){ cancelAnimationFrame(gameLoopId); finalScoreEl.textContent=state.score; gameOver.classList.remove('hidden'); bgm.pause(); intensity.pause(); return;} gameLoopId=requestAnimationFrame(gameLoop); }
+
+    // Start
+    function startGame(){ state.score=0; state.lives=3; state.xp=0; state.level=1; state.streak=0; state.lastSpawn=0; catcher.speed=parseInt(speedRange.value); scoreEl.textContent='0'; xpEl.textContent='0'; levelEl.textContent='1'; livesEl.textContent='3'; targetColor=colors[Math.floor(Math.random()*colors.length)]; targetColorBox.style.backgroundColor=targetColor; startScreen.classList.add('hidden'); hud.classList.remove('hidden'); overlay.classList.add('hidden'); gameOver.classList.add('hidden'); bgm.play(); intensity.play(); lastTime=performance.now(); gameLoopId=requestAnimationFrame(gameLoop);} startBtn.onclick=startGame;
+
+    // Handlers
+    restartBtn.onclick = ()=>{ settingsOpen=false; settingsPanel.style.display='none'; overlay.classList.add('hidden'); startGame(); };
+    pauseBtn.onclick = ()=>{ settingsOpen=false; settingsPanel.style.display='none'; state.paused=!state.paused; overlay.classList.toggle('hidden',!state.paused); overlay.textContent=state.paused?'⏸️ Paused':''; if(!state.paused){ lastTime=performance.now(); gameLoopId=requestAnimationFrame(gameLoop);} };
+    settingsBtn.onclick = ()=>{ settingsOpen=!settingsOpen; state.paused=settingsOpen; overlay.classList.toggle('hidden',!settingsOpen); settingsPanel.style.display=settingsOpen?'block':'none'; };
+
+    document.addEventListener('keydown',e=>{ if(e.key===' ') pauseBtn.onclick(); if(e.key==='ArrowLeft') catcher.velX=-1; if(e.key==='ArrowRight') catcher.velX=1; if(e.key==='ArrowUp'){ catcher.speed=Math.min(100,catcher.speed+5); speedRange.value=catcher.speed;} if(e.key==='ArrowDown'){ catcher.speed=Math.max(5,catcher.speed-5); speedRange.value=catcher.speed;} if(e.key==='a'){ state.fallSpeed=Math.min(5,state.fallSpeed+0.1);} if(e.key==='f'){ state.fallSpeed=Math.max(0.1,state.fallSpeed-0.1);} });
+    document.addEventListener('keyup',e=>{ if(e.key==='ArrowLeft'||e.key==='ArrowRight') catcher.velX=0; });
+
+    // Touch
+    canvas.addEventListener('touchstart',e=>{ e.preventDefault(); if(e.touches.length===2){ pauseBtn.onclick(); } else { let rect=canvas.getBoundingClientRect(); let x=e.touches[0].clientX-rect.left; catcher.x=Math.max(0,Math.min(canvas.width-catcher.w,x-catcher.w/2)); }});
+    canvas.addEventListener('touchmove',e=>{ e.preventDefault(); let rect=canvas.getBoundingClientRect(); let x=e.touches[0].clientX-rect.left; catcher.x=Math.max(0,Math.min(canvas.width-catcher.w,x-catcher.w/2)); });
+
+    speedRange.oninput = ()=>{ catcher.speed=parseInt(speedRange.value); };
+  });
   </script>
 </body>
 </html>
